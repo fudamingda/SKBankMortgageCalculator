@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新光銀行 隨借隨還 客製化清償計算器</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            skb: {
+              red: '#ED1B24',
+              redHover: '#C11018',
+              blue: '#0E2B47',
+              navy: '#1B365D',
+              light: '#F8FAFC'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    input[type=range]::-webkit-slider-thumb {
+      background: #ED1B24;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen antialiased">
+
+  <!-- 頂部 Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-skb-red rounded-xl flex items-center justify-center text-white font-black text-xl shadow-md">
+          新
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-base sm:text-lg font-bold text-skb-blue tracking-tight">個人專屬・隨借隨還理財房貸</span>
+            <span class="bg-red-100 text-skb-red border border-red-200 text-xs px-2.5 py-0.5 rounded-full font-bold">實體帳務版</span>
+          </div>
+          <p class="text-xs text-slate-500">依據實際負債本金 $3,484,687 與 3.15% 利率精算</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="inline-flex items-center text-xs px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+          連線帳務試算中
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- 實際帳務現況診斷橫幅 (真實數據還原) -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center justify-between pb-3 border-b border-slate-100 gap-3">
+        <div>
+          <h2 class="text-base font-bold text-slate-900 flex items-center">
+            <svg class="w-5 h-5 text-skb-red mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            實際網銀帳務診斷報告
+          </h2>
+          <p class="text-xs text-slate-500">根據您提供的對帳明細與可用額度狀態解析</p>
+        </div>
+        <div class="flex items-center space-x-2 text-xs">
+          <span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-lg">核定循環額度：<strong>$3,500,000</strong></span>
+          <span class="bg-blue-50 text-skb-navy px-3 py-1 rounded-lg">可用額度：<strong>$15,313</strong></span>
+        </div>
+      </div>
+
+      <!-- 四個當前關鍵數據指標 -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          <div class="text-xs text-slate-500">當前負債總本金</div>
+          <div class="text-xl font-black text-skb-red font-mono mt-0.5">$3,484,687</div>
+          <div class="text-[11px] text-slate-400">目前實際透支餘額</div>
+        </div>
+
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          <div class="text-xs text-slate-500">實質適用年利率</div>
+          <div class="text-xl font-black text-slate-800 font-mono mt-0.5">3.150 %</div>
+          <div class="text-[11px] text-slate-400">按日計息 / 每月21日扣繳</div>
+        </div>
+
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          <div class="text-xs text-slate-500">每日產生利息 (日息)</div>
+          <div class="text-xl font-black text-amber-600 font-mono mt-0.5">≈ $300.7 元</div>
+          <div class="text-[11px] text-slate-400">本金未降前天天扣</div>
+        </div>
+
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          <div class="text-xs text-slate-500">每月平均利息支出</div>
+          <div class="text-xl font-black text-rose-600 font-mono mt-0.5">$9,147 ~ $9,621</div>
+          <div class="text-[11px] text-slate-400">視當月實際天數而定</div>
+        </div>
+      </div>
+
+      <!-- 警示說明：為什麼之前本金幾乎沒動 -->
+      <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start space-x-3 text-amber-900 text-xs leading-relaxed">
+        <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        <div>
+          <strong class="font-bold text-amber-950">關鍵警訊提醒：每月僅還 $9,200 ～ $9,300 會陷入「無限循環利息陷阱」！</strong><br>
+          從對帳單可見，您在 07/19 還款 $9,300，但 07/21 利息扣了 <strong>$9,621</strong>（本金反而增加 $321）；08/19 還款 $9,200，08/21 利息扣了 <strong>$9,322</strong>（本金又增加 $122）。<br>
+          您每個月繳的錢，<strong>100% 全被利息抵消，完全沒有還到實質本金</strong>。若想真正消滅這 348.4 萬元的負債，必須提高每月還款金額！
+        </div>
+      </div>
+    </div>
+
+    <!-- 互動試算操作區與圖表 -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- 左側：參數調整面板 (5欄) -->
+      <div class="lg:col-span-5 space-y-5">
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 class="text-base font-bold text-slate-900 flex items-center">
+              <svg class="w-5 h-5 text-skb-red mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+              清償試算參數調整
+            </h3>
+            <button onclick="resetToCurrentActual()" class="text-xs text-skb-red hover:underline font-medium">重設為實體數據</button>
+          </div>
+
+          <!-- 當前剩餘本金 -->
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <label class="font-medium text-slate-600">目前尚欠本金餘額</label>
+              <span class="font-bold text-slate-800 font-mono" id="principalDisplay">$3,484,687 元</span>
+            </div>
+            <input type="number" id="principalInput" value="3484687" step="1000" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-skb-red" oninput="onPrincipalChange(this.value)">
+            <p class="text-[11px] text-slate-400 mt-1">預設已載入您最新即時負債本金</p>
+          </div>
+
+          <!-- 循環透支利率 -->
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <label class="font-medium text-slate-600">透支循環年利率 (%)</label>
+              <span class="font-bold text-slate-800 font-mono" id="rateDisplay">3.15 %</span>
+            </div>
+            <input type="number" id="rateInput" value="3.15" step="0.01" min="1.0" max="15.0" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-skb-red" oninput="calculatePayoffPlan()">
+            <p class="text-[11px] text-slate-400 mt-1">新光專案目前計息標準 (可手動試算升降息)</p>
+          </div>
+
+          <!-- 每月預計還款額度設定 -->
+          <div class="bg-red-50/60 p-4 rounded-xl border border-red-100 space-y-3">
+            <div class="flex justify-between items-center">
+              <label class="font-bold text-xs text-slate-900">每月固定還款金額</label>
+              <span class="text-xl font-black text-skb-red font-mono" id="monthlyRepayDisplay">$15,000 元</span>
+            </div>
+            <input type="range" id="monthlyRepayRange" min="9000" max="50000" step="500" value="15000" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-skb-red" oninput="syncRepayInput(this.value)">
+
+            <div class="relative">
+              <span class="absolute left-3 top-2 text-sm text-slate-400 font-mono">$</span>
+              <input type="number" id="monthlyRepayInput" value="15000" min="5000" step="500" class="w-full pl-7 pr-3 py-1.5 border border-red-200 bg-white rounded-lg text-sm font-bold font-mono text-slate-800 focus:outline-none focus:border-skb-red" oninput="syncRepayRange(this.value)">
+            </div>
+
+            <!-- 快捷情境按鈕 -->
+            <div class="text-[11px] text-slate-500 font-medium">快速套用模擬情境：</div>
+            <div class="grid grid-cols-3 gap-1.5 text-xs">
+              <button onclick="setRepay(9200)" class="py-1.5 px-2 bg-white border border-slate-200 hover:border-red-400 rounded-lg text-slate-700 transition font-medium">現況 $9,200</button>
+              <button onclick="setRepay(12000)" class="py-1.5 px-2 bg-white border border-slate-200 hover:border-red-400 rounded-lg text-slate-700 transition font-medium">溫和 $12,000</button>
+              <button onclick="setRepay(15000)" class="py-1.5 px-2 bg-red-100 text-skb-red border border-red-300 font-bold rounded-lg transition">推薦 $15,000</button>
+              <button onclick="setRepay(20000)" class="py-1.5 px-2 bg-white border border-slate-200 hover:border-red-400 rounded-lg text-slate-700 transition font-medium">加速 $20,000</button>
+              <button onclick="setRepay(25000)" class="py-1.5 px-2 bg-white border border-slate-200 hover:border-red-400 rounded-lg text-slate-700 transition font-medium">積極 $25,000</button>
+              <button onclick="setRepay(30000)" class="py-1.5 px-2 bg-white border border-slate-200 hover:border-red-400 rounded-lg text-slate-700 transition font-medium">強效 $30,000</button>
+            </div>
+          </div>
+
+          <!-- 額外大額一次性還款試算 (例如年終、獎金) -->
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+            <div class="flex items-center justify-between text-xs font-bold text-slate-800">
+              <span class="flex items-center">
+                <svg class="w-4 h-4 text-emerald-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                模擬單筆額外償還 (隨借隨還優勢)
+              </span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <input type="number" id="lumpSumInput" value="0" step="10000" placeholder="例如額外還 200,000" class="w-full border border-slate-300 bg-white rounded-lg p-2 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:border-skb-red" oninput="calculatePayoffPlan()">
+              <button onclick="addLumpSum(100000)" class="shrink-0 px-2.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg border border-emerald-200 transition">+10萬</button>
+              <button onclick="addLumpSum(200000)" class="shrink-0 px-2.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg border border-emerald-200 transition">+20萬</button>
+            </div>
+            <p class="text-[11px] text-slate-400">隨借隨還可隨時大額還本，當天立刻減少日息計算基數！</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右側：試算成果、圖表與時間軸 (7欄) -->
+      <div class="lg:col-span-7 space-y-5">
+
+        <!-- 試算成果核心數據牌卡 -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <!-- 需還款時間 -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+            <div class="text-xs font-semibold text-slate-500 mb-1">預估清償總時間</div>
+            <div class="text-2xl font-black text-skb-red tracking-tight font-mono" id="payoffDurationDisplay">31 年 7 個月</div>
+            <div class="text-[11px] text-slate-500 mt-1" id="payoffMonthCountDisplay">共計 379 期 (個月)</div>
+          </div>
+
+          <!-- 累計支付利息 -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+            <div class="text-xs font-semibold text-slate-500 mb-1">累積支出總利息</div>
+            <div class="text-2xl font-black text-slate-800 tracking-tight font-mono" id="totalInterestPaidDisplay">$219.5 萬</div>
+            <div class="text-[11px] text-slate-400 mt-1 font-mono" id="interestToPrincipalRatio">利息佔比 63.0%</div>
+          </div>
+
+          <!-- 首月實質還本率 -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+            <div class="text-xs font-semibold text-slate-500 mb-1">首月實質還本金額</div>
+            <div class="text-2xl font-black text-emerald-600 tracking-tight font-mono" id="firstMonthPrincipalDisplay">$5,853 元</div>
+            <div class="text-[11px] text-emerald-600 mt-1 font-medium" id="firstMonthInterestDisplay">利息約 $9,147 元</div>
+          </div>
+        </div>
+
+        <!-- 結論分析警示盒 -->
+        <div id="statusAnalysisBox" class="bg-blue-50 border border-blue-200 p-4 rounded-2xl text-xs space-y-1 text-slate-700 leading-relaxed">
+          <!-- JS 動態寫入結論 -->
+        </div>
+
+        <!-- 本金遞減圖表 (Chart.js) -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h4 class="text-base font-bold text-slate-900 flex items-center">
+                <svg class="w-5 h-5 text-skb-red mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-round="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                本金清償走勢曲線圖
+              </h4>
+              <p class="text-xs text-slate-500">視覺化觀察本金餘額如何隨時間歸零</p>
+            </div>
+            <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg" id="chartTargetDate">預計清償日：2058 年</span>
+          </div>
+
+          <div class="h-64 sm:h-72 w-full">
+            <canvas id="payoffChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 每期攤還進度表 -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h4 class="text-sm font-bold text-slate-900">每月利息與實質還本明細表</h4>
+              <p class="text-xs text-slate-500">隨著本金下降，每月的透支息會迅速遞減、本金抵扣加速！</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="toggleView(24)" id="btn24" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-skb-red text-white transition">前 24 期</button>
+              <button onclick="toggleView(60)" id="btn60" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition">前 5 年 (60期)</button>
+              <button onclick="toggleView(0)" id="btnAll" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition">全部期數</button>
+              <button onclick="exportCSV()" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 flex items-center transition">
+                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                匯出 CSV
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto max-h-80 custom-scroll">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50 text-slate-700 uppercase font-semibold sticky top-0 border-b border-slate-200 z-10">
+                <tr>
+                  <th class="py-2.5 px-3">期數</th>
+                  <th class="py-2.5 px-3">還款金額</th>
+                  <th class="py-2.5 px-3 text-rose-600">當期透支息 (扣除)</th>
+                  <th class="py-2.5 px-3 text-emerald-600">實質扣減本金</th>
+                  <th class="py-2.5 px-3 font-mono">剩餘未清償本金</th>
+                </tr>
+              </thead>
+              <tbody id="scheduleTbody" class="divide-y divide-slate-100 font-mono">
+                <!-- JS 動態渲染 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- 提示訊息元件 -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl text-xs font-medium transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none z-50 flex items-center space-x-2">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+    <span id="toastMsg">通知</span>
+  </div>
+
+  <script>
+    let chartInstance = null;
+    let scheduleList = [];
+    let tableLimit = 24;
+
+    function formatNumber(num) {
+      return Math.round(num).toLocaleString('zh-TW');
+    }
+
+    function showToast(text) {
+      const el = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = text;
+      el.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        el.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    function resetToCurrentActual() {
+      document.getElementById('principalInput').value = 3484687;
+      document.getElementById('rateInput').value = 3.15;
+      document.getElementById('monthlyRepayInput').value = 15000;
+      document.getElementById('monthlyRepayRange').value = 15000;
+      document.getElementById('lumpSumInput').value = 0;
+      calculatePayoffPlan();
+      showToast('已重設回您的實際帳務數據！');
+    }
+
+    function onPrincipalChange(val) {
+      document.getElementById('principalDisplay').innerText = '$' + formatNumber(val || 0) + ' 元';
+      calculatePayoffPlan();
+    }
+
+    function syncRepayInput(val) {
+      document.getElementById('monthlyRepayInput').value = val;
+      document.getElementById('monthlyRepayDisplay').innerText = '$' + formatNumber(val) + ' 元';
+      calculatePayoffPlan();
+    }
+
+    function syncRepayRange(val) {
+      let v = parseFloat(val) || 0;
+      document.getElementById('monthlyRepayRange').value = v;
+      document.getElementById('monthlyRepayDisplay').innerText = '$' + formatNumber(v) + ' 元';
+      calculatePayoffPlan();
+    }
+
+    function setRepay(amount) {
+      document.getElementById('monthlyRepayInput').value = amount;
+      document.getElementById('monthlyRepayRange').value = amount;
+      document.getElementById('monthlyRepayDisplay').innerText = '$' + formatNumber(amount) + ' 元';
+      calculatePayoffPlan();
+      showToast(`已套用每月還款 $${formatNumber(amount)} 方案`);
+    }
+
+    function addLumpSum(amt) {
+      const current = parseFloat(document.getElementById('lumpSumInput').value) || 0;
+      document.getElementById('lumpSumInput').value = current + amt;
+      calculatePayoffPlan();
+      showToast(`已增加額外償還 $${formatNumber(amt)} 元`);
+    }
+
+    function toggleView(limit) {
+      tableLimit = limit;
+      const btn24 = document.getElementById('btn24');
+      const btn60 = document.getElementById('btn60');
+      const btnAll = document.getElementById('btnAll');
+
+      [btn24, btn60, btnAll].forEach(b => {
+        b.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition';
+      });
+
+      if (limit === 24) btn24.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-skb-red text-white transition';
+      else if (limit === 60) btn60.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-skb-red text-white transition';
+      else btnAll.className = 'px-3 py-1.5 text-xs font-semibold rounded-lg bg-skb-red text-white transition';
+
+      renderTable();
+    }
+
+    function clearChart() {
+      if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+      }
+    }
+
+    function calculatePayoffPlan() {
+      let principal = parseFloat(document.getElementById('principalInput').value) || 0;
+      const annualRate = (parseFloat(document.getElementById('rateInput').value) || 3.15) / 100;
+      const monthlyPayment = parseFloat(document.getElementById('monthlyRepayInput').value) || 0;
+      const lumpSum = parseFloat(document.getElementById('lumpSumInput').value) || 0;
+
+      // 若有單筆大額還款，先扣除
+      principal = Math.max(0, principal - lumpSum);
+
+      document.getElementById('principalDisplay').innerText = '$' + formatNumber(principal) + ' 元';
+      document.getElementById('rateDisplay').innerText = (annualRate * 100).toFixed(2) + ' %';
+      document.getElementById('monthlyRepayDisplay').innerText = '$' + formatNumber(monthlyPayment) + ' 元';
+
+      scheduleList = [];
+      let balance = principal;
+      let totalInterest = 0;
+      let month = 0;
+
+      // 首月產生的利息 (以每年 12 個月平均換算)
+      const firstMonthInterest = balance * (annualRate / 12);
+      const firstMonthPrincipal = Math.max(0, monthlyPayment - firstMonthInterest);
+
+      document.getElementById('firstMonthInterestDisplay').innerText = '首月利息約 $' + formatNumber(firstMonthInterest) + ' 元';
+      document.getElementById('firstMonthPrincipalDisplay').innerText = '$' + formatNumber(firstMonthPrincipal) + ' 元';
+
+      // 檢查是否永遠還不完 (若每月還款 <= 首月利息)
+      if (monthlyPayment <= firstMonthInterest && balance > 0) {
+        document.getElementById('payoffDurationDisplay').innerText = '永遠無法清償';
+        document.getElementById('payoffDurationDisplay').classList.add('text-rose-600');
+        document.getElementById('payoffMonthCountDisplay').innerText = `每月還款 ($${formatNumber(monthlyPayment)}) 小於等於利息 ($${formatNumber(firstMonthInterest)})`;
+        document.getElementById('totalInterestPaidDisplay').innerText = '無限擴大 (∞)';
+        document.getElementById('interestToPrincipalRatio').innerText = '本金無法扣減';
+        document.getElementById('chartTargetDate').innerText = '無法歸零';
+
+        document.getElementById('statusAnalysisBox').innerHTML = `
+          <div class="font-bold text-rose-800 text-sm flex items-center">
+            <svg class="w-4 h-4 mr-1 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            注意：每月 $${formatNumber(monthlyPayment)} 元無法償還任何本金！
+          </div>
+          <p class="text-slate-600 mt-1">目前 348.4 萬本金在 3.15% 利率下，每月利息約需 <strong>$${formatNumber(firstMonthInterest)} 元</strong>。若每月存入金額低於此數值，欠款只會像滾雪球般越來越多，請務必將每月還款提高至 <strong>$10,000 元以上</strong>以啟動本金扣抵。</p>
+        `;
+
+        renderEmptySchedule();
+        clearChart();
+        return;
+      }
+
+      document.getElementById('payoffDurationDisplay').classList.remove('text-rose-600');
+
+      // 逐月模擬攤還循環
+      const maxMonths = 1200; // 防呆上限 100 年
+      while (balance > 0 && month < maxMonths) {
+        month++;
+        const interest = balance * (annualRate / 12);
+        let repay = monthlyPayment;
+        let pPaid = repay - interest;
+
+        // 最後一期平差
+        if (pPaid >= balance) {
+          pPaid = balance;
+          repay = pPaid + interest;
+          balance = 0;
+        } else {
+          balance -= pPaid;
+        }
+
+        totalInterest += interest;
+
+        scheduleList.push({
+          month: month,
+          payment: repay,
+          interest: interest,
+          principalPaid: pPaid,
+          balance: balance
+        });
+      }
+
+      const years = Math.floor(month / 12);
+      const remainingM = month % 12;
+
+      document.getElementById('payoffDurationDisplay').innerText = `${years} 年 ${remainingM} 個月`;
+      document.getElementById('payoffMonthCountDisplay').innerText = `共計 ${month} 期 (個月)`;
+      document.getElementById('totalInterestPaidDisplay').innerText = '$' + (totalInterest / 10000).toFixed(1) + ' 萬';
+
+      const ratio = ((totalInterest / (principal + totalInterest)) * 100).toFixed(1);
+      document.getElementById('interestToPrincipalRatio').innerText = `總付出利息佔比 ${ratio}%`;
+
+      // 清償目標年份預估
+      const now = new Date();
+      const targetDate = new Date(now.getFullYear(), now.getMonth() + month);
+      document.getElementById('chartTargetDate').innerText = `預計於 ${targetDate.getFullYear()} 年 ${targetDate.getMonth() + 1} 月全額還清`;
+
+      // 結論建議文字
+      let adviceHtml = '';
+      if (monthlyPayment <= 10000) {
+        adviceHtml = `
+          <div class="font-bold text-amber-800 text-sm">目前還款進度極度緩慢</div>
+          <p class="text-slate-600 mt-1">每月僅能扣抵約 $${formatNumber(firstMonthPrincipal)} 元本金，需要長達 <strong>${years} 年</strong> 才能清償，總共需支付高達 <strong>$${formatNumber(totalInterest)} 元</strong> 的利息！強烈建議將還款提高至 $15,000 元以上。</p>
+        `;
+      } else if (monthlyPayment <= 18000) {
+        adviceHtml = `
+          <div class="font-bold text-emerald-800 text-sm">良好的穩健還款節奏（推薦）</div>
+          <p class="text-slate-600 mt-1">每月已有 <strong>$${formatNumber(firstMonthPrincipal)} 元</strong> 實質沖銷本金！約可在 <strong>${years} 年 ${remainingM} 個月</strong> 內完全脫離負債，相比最低還款省下了上千萬元的利息！</p>
+        `;
+      } else {
+        adviceHtml = `
+          <div class="font-bold text-skb-blue text-sm">高效率的快速還本節奏！</div>
+          <p class="text-slate-600 mt-1">大幅壓縮負債年限至 <strong>${years} 年以內</strong>，總利息支出大幅壓低至 $${(totalInterest / 10000).toFixed(1)} 萬元，是極具理財智慧的積極還款法！</p>
+        `;
+      }
+      document.getElementById('statusAnalysisBox').innerHTML = adviceHtml;
+
+      renderTable();
+      prepareAndDrawChart(principal);
+    }
+
+    function renderEmptySchedule() {
+      const tbody = document.getElementById('scheduleTbody');
+      tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400">目前月還款金額過低，未啟動本金扣抵，無有效攤還期數</td></tr>`;
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('scheduleTbody');
+      tbody.innerHTML = '';
+
+      if (scheduleList.length === 0) {
+        renderEmptySchedule();
+        return;
+      }
+
+      const list = tableLimit === 0 ? scheduleList : scheduleList.slice(0, tableLimit);
+
+      const rows = list.map(item => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="py-2 px-3 font-semibold text-slate-700">第 ${item.month} 期</td>
+          <td class="py-2 px-3 font-bold text-slate-900">$${formatNumber(item.payment)}</td>
+          <td class="py-2 px-3 text-rose-600 font-medium">-$${formatNumber(item.interest)}</td>
+          <td class="py-2 px-3 text-emerald-600 font-bold">+$${formatNumber(item.principalPaid)}</td>
+          <td class="py-2 px-3 text-slate-700">$${formatNumber(item.balance)}</td>
+        </tr>
+      `).join('');
+
+      tbody.innerHTML = rows;
+    }
+
+    function prepareAndDrawChart(initialPrincipal) {
+      const labels = ['目前現狀'];
+      const dataPoints = [(initialPrincipal / 10000).toFixed(1)];
+
+      const totalMonths = scheduleList.length;
+      const step = totalMonths > 120 ? 12 : (totalMonths > 48 ? 6 : 2);
+
+      for (let i = step - 1; i < totalMonths; i += step) {
+        const item = scheduleList[i];
+        labels.push(`第${Math.round((i + 1) / 12 * 10) / 10}年`);
+        dataPoints.push((item.balance / 10000).toFixed(1));
+      }
+
+      if (scheduleList.length > 0 && (totalMonths % step !== 0)) {
+        labels.push('全額清償');
+        dataPoints.push(0);
+      }
+
+      const ctx = document.getElementById('payoffChart').getContext('2d');
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: '尚欠本金餘額 (萬元)',
+            data: dataPoints,
+            borderColor: '#ED1B24',
+            backgroundColor: 'rgba(237, 27, 36, 0.08)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.2,
+            pointRadius: 3,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `本金餘額：${context.raw} 萬元`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(val) { return val + ' 萬'; }
+              },
+              grid: { color: '#f1f5f9' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { maxTicksLimit: 8, font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    function exportCSV() {
+      if (!scheduleList || scheduleList.length === 0) {
+        showToast('目前無有效資料可匯出');
+        return;
+      }
+
+      let csv = '\uFEFF期數,應還款金額(元),當期利息(元),本金抵扣(元),剩餘本金餘額(元)\n';
+      scheduleList.forEach(r => {
+        csv += `${r.month},${Math.round(r.payment)},${Math.round(r.interest)},${Math.round(r.principalPaid)},${Math.round(r.balance)}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `新光銀行隨借隨還_客製化清償明細表.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('已成功匯出清償明細 CSV 檔案！');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      calculatePayoffPlan();
+    });
+  </script>
+</body>
+</html>
